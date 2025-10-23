@@ -1,1 +1,97 @@
+import heapq
 
+class GrafoDijkstra:
+    """
+    Implementa el algoritmo de Dijkstra para encontrar los caminos más cortos 
+    desde un nodo origen en un grafo ponderado.
+    """
+    def __init__(self, grafo):
+        # El grafo se representa como un diccionario de adyacencia:
+        # {nodo_A: {nodo_B: peso_AB, nodo_C: peso_AC}, ...}
+        self.grafo = grafo
+
+    def encontrar_caminos_cortos(self, origen):
+        """
+        Calcula la distancia mínima desde 'origen' a todos los demás nodos.
+        """
+        # Inicialización de estructuras
+        # Distancia: {nodo: distancia_minima} -> Inicialmente infinito, origen a 0
+        distancias = {nodo: float('inf') for nodo in self.grafo}
+        distancias[origen] = 0
+        
+        # Padre: {nodo: nodo_padre} -> Para reconstruir el camino
+        padres = {nodo: None for nodo in self.grafo}
+        
+        # Cola de Prioridad: (distancia, nodo)
+        pq = [(0, origen)]
+
+        while pq:
+            # Extraer el nodo con la distancia MÁS PEQUEÑA (Propiedad de la Cola de Prioridad)
+            distancia_actual, nodo_actual = heapq.heappop(pq)
+
+            # Si la distancia que acabamos de extraer es mayor que la ya registrada, la ignoramos.
+            # Esto maneja caminos duplicados y más largos que llegaron tarde.
+            if distancia_actual > distancias[nodo_actual]:
+                continue
+
+            # Explorar vecinos
+            for vecino, peso in self.grafo.get(nodo_actual, {}).items():
+                # Calcular la nueva distancia tentativa a través del nodo_actual
+                nueva_distancia = distancia_actual + peso
+
+                # Relajación: Si encontramos un camino más corto, actualizamos
+                if nueva_distancia < distancias[vecino]:
+                    distancias[vecino] = nueva_distancia
+                    padres[vecino] = nodo_actual
+                    
+                    # Agregar/actualizar la distancia en la Cola de Prioridad
+                    heapq.heappush(pq, (nueva_distancia, vecino))
+        
+        return distancias, padres
+
+    def _reconstruir_camino(self, origen, destino, padres):
+        """Función auxiliar para reconstruir el camino desde el origen al destino."""
+        camino = []
+        nodo = destino
+        while nodo is not None:
+            camino.append(nodo)
+            if nodo == origen:
+                break
+            nodo = padres.get(nodo)
+        
+        if camino and camino[-1] == origen:
+            return " -> ".join(camino[::-1])
+        else:
+            return "No alcanzable"
+
+
+# --- Simulación de uso ---
+
+# Grafo Ponderado: {Ciudad_A: {Ciudad_B: peso, Ciudad_C: peso}}
+mapa_rutas_ponderado = {
+    'A': {'B': 7, 'C': 3},
+    'B': {'D': 4, 'E': 2},
+    'C': {'B': 2, 'D': 5, 'F': 8},
+    'D': {'E': 1, 'G': 9},
+    'E': {'G': 3},
+    'F': {'G': 1},
+    'G': {} 
+}
+
+grafo = GrafoDijkstra(mapa_rutas_ponderado)
+origen = 'A'
+
+distancias_finales, padres = grafo.encontrar_caminos_cortos(origen)
+
+print(f"--- Algoritmo de Dijkstra desde Origen {origen} ---")
+print("-" * 50)
+
+for destino, dist in distancias_finales.items():
+    if destino != origen:
+        if dist == float('inf'):
+            print(f"Distancia a {destino}: INF (No alcanzable)")
+        else:
+            camino = grafo._reconstruir_camino(origen, destino, padres)
+            print(f"Distancia mínima a {destino}: {dist}")
+            print(f"Camino: {camino}")
+            print("-" * 20)
